@@ -5,12 +5,18 @@ import {
   routePartykitRequest,
 } from "partyserver";
 
+import {
+  Filter
+} from 'bad-words'
+
 import type { ChatMessage, Message } from "../shared";
 
 export class Chat extends Server<Env> {
   static options = { hibernate: true };
 
   messages = [] as ChatMessage[];
+  filter = new Filter({ placeHolder: '❤️'});
+
 
   broadcastMessage(message: Message, exclude?: string[]) {
     this.broadcast(JSON.stringify(message), exclude);
@@ -66,13 +72,15 @@ export class Chat extends Server<Env> {
   }
 
   onMessage(connection: Connection, message: WSMessage) {
+    const parsed = JSON.parse(message as string) as Message;
+    const cleanMsg = {...parsed, content: this.filter.clean(parsed.content)} ;
     // let's broadcast the raw message to everyone else
-    this.broadcast(message);
+    this.broadcast(JSON.stringify(cleanMsg));
 
     // let's update our local messages store
-    const parsed = JSON.parse(message as string) as Message;
-    if (parsed.type === "add" || parsed.type === "update") {
-      this.saveMessage(parsed);
+    // const parsed = JSON.parse(message as string) as Message;
+    if (cleanMsg.type === "add" || cleanMsg.type === "update") {
+      this.saveMessage(cleanMsg);
     }
   }
 }
