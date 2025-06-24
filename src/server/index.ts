@@ -33,7 +33,7 @@ export class Chat extends Server<Env> {
 
     // load the messages from the database
     this.messages = this.ctx.storage.sql
-      .exec(`SELECT * FROM messages`)
+      .exec(`SELECT * FROM messages LIMIT 500`)
       .toArray() as ChatMessage[];
   }
 

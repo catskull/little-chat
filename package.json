@@ -32,7 +32,7 @@
   },
   "scripts": {
     "cf-typegen": "wrangler types ./src/server/worker-configuration.d.ts",
-    "check": "tsc --project src/client && tsc --project src/server && wrangler deploy --dry-run",
+    "check": "tsc --project src/server && wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev"
   }
