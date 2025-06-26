@@ -72,15 +72,23 @@ export class Chat extends Server<Env> {
   }
 
   onMessage(connection: Connection, message: WSMessage) {
+    const escapeHtml = (text) => {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+    };    
     const parsed = JSON.parse(message as string) as Message;
-    const cleanMsg = {...parsed, content: this.filter.clean(parsed.content)};
-    // let's broadcast the raw message to everyone else
-    this.broadcast(JSON.stringify(cleanMsg));
+    const cleanMsg = {...parsed, content: escapeHtml(this.filter.clean(parsed.content))};
 
     // let's update our local messages store
     // const parsed = JSON.parse(message as string) as Message;
     if (cleanMsg.type === "add" || cleanMsg.type === "update") {
       this.saveMessage(cleanMsg);
+      // let's broadcast the raw message to everyone else
+      this.broadcast(JSON.stringify(cleanMsg));
     }
   }
 
