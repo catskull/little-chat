@@ -33,8 +33,8 @@ export class Chat extends Server<Env> {
 
     // load the messages from the database
     this.messages = this.ctx.storage.sql
-      .exec(`SELECT * FROM messages LIMIT 100`)
-      .toArray() as ChatMessage[];
+      .exec(`SELECT * FROM messages ORDER BY rowid DESC LIMIT 100`)
+      .toArray().reverse() as ChatMessage[];
   }
 
   onConnect(connection: Connection) {
