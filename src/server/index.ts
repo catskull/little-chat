@@ -33,7 +33,7 @@ export class Chat extends Server<Env> {
 
     // load the messages from the database
     this.messages = this.ctx.storage.sql
-      .exec(`SELECT * FROM messages LIMIT 500`)
+      .exec(`SELECT * FROM messages LIMIT 100`)
       .toArray() as ChatMessage[];
   }
 
@@ -73,7 +73,7 @@ export class Chat extends Server<Env> {
 
   onMessage(connection: Connection, message: WSMessage) {
     const parsed = JSON.parse(message as string) as Message;
-    const cleanMsg = {...parsed, content: this.filter.clean(parsed.content)} ;
+    const cleanMsg = {...parsed, content: this.filter.clean(parsed.content)};
     // let's broadcast the raw message to everyone else
     this.broadcast(JSON.stringify(cleanMsg));
 
@@ -83,13 +83,44 @@ export class Chat extends Server<Env> {
       this.saveMessage(cleanMsg);
     }
   }
+
+  async onRequest(req: Party.Request) {
+    let response;
+    if (req.method === 'GET') {
+      response = new Response(JSON.stringify({type: "all", messages: this.messages}), { status: 200 });
+    }
+
+    if (req.method === 'POST') {
+      const parsed = await req.json() as Message;
+      const cleanMsg = {...parsed, content: this.filter.clean(parsed.content)};
+      this.broadcast(JSON.stringify(cleanMsg));
+      if (cleanMsg.type === "add" || cleanMsg.type === "update") {
+        this.saveMessage(cleanMsg);
+      }
+       response = new Response(JSON.stringify(cleanMsg));
+    }
+
+
+    // Clone the response to add CORS headers
+    const corsResponse = new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: {
+        ...response.headers,
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
+
+    return corsResponse;
+  }
 }
 
 export default {
   async fetch(request, env) {
     return (
-      (await routePartykitRequest(request, { ...env })) ||
-      env.ASSETS.fetch(request)
+      await routePartykitRequest(request, { ...env })
     );
   },
 } satisfies ExportedHandler<Env>;
